@@ -23,7 +23,7 @@ def print_xml_test(tokens, xout):
   xout.close()
 
 def main():
-  fin = open('Square.jack', 'r')
+  fin = open('Main.jack', 'r')
   xout = open('test_out.xml', 'w')
 
   j = JackTokenizer(fin)

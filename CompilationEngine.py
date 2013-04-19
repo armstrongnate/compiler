@@ -1,14 +1,18 @@
 from JackTokenizer import *
-from SymbolTable import *
+from constants import *
+from VmWriter import *
 
 class CompilationEngine:
   def __init__(self, tokens, outfile):
+    self.writer = VmWriter('myMain.vm')
     self.tokens = tokens
     self.i = 0
     self.out = outfile
     self.indent = 0
+    self.linenumber = 0
+    self.numLocalVariables = 0
     self.compileClass()
-    self.linenumber
+    self.writer.close()
 
   def fail(self, message):
     print ">>>>>>>>>>>>>>>>>>>>", message, self.linenumber
@@ -62,11 +66,11 @@ class CompilationEngine:
     return self.identifier()
 
   def compileClass(self):
-    self.symbol_table = SymbolTable()
+    self.fieldCount = 0;
     print >>self.out, ' '*self.indent + '<class>'
     self.indent += 2
     self.keyword('class')
-    name = self.identifier()
+    self.className = self.identifier()
     self.symbol('{')
     while True:
       token = self.peek()
@@ -81,7 +85,7 @@ class CompilationEngine:
     self.symbol('}')
     self.indent -= 2
     print >>self.out, ' '*self.indent + '</class>'
-    print self.symbol_table
+    print SYMBOL_TABLE
 
   def expectVariables(self):
     variables = []
@@ -99,11 +103,13 @@ class CompilationEngine:
     self.indent += 2
     token = self.peek()
     kind = self.keyword(token[1])
+    if kind == 'field':
+      self.fieldCount += 1
     variables = self.expectVariables()
     _type = variables[0]
     names = variables[1:]
     for name in names:
-      self.symbol_table.define(name, _type, kind)
+      SYMBOL_TABLE.define(name, _type, kind)
     self.symbol(';')
     self.indent -= 2
     print >>self.out, ' '*self.indent + '</classVarDec>'
@@ -138,19 +144,26 @@ class CompilationEngine:
     return params
 
   def compileSubroutine(self):
-    self.symbol_table.startSubroutine()
+    SYMBOL_TABLE.startSubroutine()
     print >>self.out, ' '*self.indent + '<subroutineDec>'
     self.indent += 2
+    self.isMethod = False
+    self.isConstructor = False
     token = self.peek()
+    if token[1] == 'constructor':
+      self.isConstructor = True
+    elif token[1] == 'method':
+      self.isMethod = True
     self.keyword(token[1])
     self.keyword('void') if self.peek()[1] == 'void' else self.expectType()
+    self.subName = self.peek()[1]
     self.identifier()
     self.symbol('(')
     params = self.expectParams()
     types = params[0]
     names = params[1]
     for i in range(len(types)):
-      self.symbol_table.define(names[i], types[i], 'arg')
+      SYMBOL_TABLE.define(names[i], types[i], 'arg')
     self.symbol(')')
     self.compileSubroutineBody()
     self.indent -= 2
@@ -162,14 +175,25 @@ class CompilationEngine:
     self.symbol('{')
     while self.peek()[1] != '}':
       token = self.peek()
-      if token[1] == 'var':
+      while token[1] == 'var':
         variables = self.compileVarDec()
+        self.numLocalVariables = len(variables) # for writer.writeFunction
         _type = variables[0]
         names = variables[1:]
         for name in names:
-          self.symbol_table.define(name, _type, 'var')
-      else:
-        self.expectStatements()
+          SYMBOL_TABLE.define(name, _type, 'var')
+
+      # write function/method/constructor vm code
+      self.writer.writeFunction(self.className + '.' + self.subName, self.numLocalVariables)
+      if self.isConstructor:
+        self.writer.writePush("constant", self.fieldCount)
+        self.writer.writeCall("Memory.alloc", 1) #allocate space for this object
+        self.writer.writePop("pointer", 0) #assign object to 'this'
+      elif self.isMethod:
+        self.writer.writePush(SYMBOL_TABLE.ARG, 0)
+        self.writer.writePop("pointer", self.writer.THIS_POINTER)
+
+      self.expectStatements()
     self.symbol('}')
     self.indent -= 2
     print >>self.out, ' '*self.indent + '</subroutineBody>'
@@ -213,9 +237,11 @@ class CompilationEngine:
     elif self.peek()[1] == 'do':
       self.keyword('do')
       self.expectSubroutineCall()
+      self.writer.writePop('temp', 0) # pops and ignores return value
       self.symbol(';')
     elif self.peek()[1] == 'return':
       self.keyword('return')
+      self.writer.writeReturn()
       if self.peek()[1] != ';':
         self.expectExpression()
       self.symbol(';')
@@ -289,22 +315,45 @@ class CompilationEngine:
     print >>self.out, ' '*self.indent + '</expression>'
 
   def expectExpressionList(self):
+    self.numExpressions = 0
     print >>self.out, ' '*self.indent + '<expressionList>'
     self.indent += 2
     if self.peek()[1] != ')':
       self.expectExpression()
+      self.numExpressions += 1
       while self.peek()[1] == ',':
         self.symbol(',')
         self.expectExpression()
+        self.numExpressions += 1
     self.indent -= 2
     print >>self.out, ' '*self.indent + '</expressionList>'
 
 
   def expectSubroutineCall(self):
-    self.identifier()
+    self.numExpressions = 0
+    first_identifier = self.identifier()
+    sub_identifier = ''
+    isObjorClass = False
     if self.peek()[1] == '.':
+      isObjorClass = True
       self.symbol('.')
-      self.identifier()
+      sub_identifier = self.identifier() # method or function name
     self.symbol('(')
     self.expectExpressionList()
     self.symbol(')')
+
+    if isObjorClass:
+      # if sub_identifier is a method, push its class onto stack
+      if SYMBOL_TABLE.isDefined(first_identifier):
+        callName = self.symbolTable.typeOf(first_identifier) + "." + sub_identifier
+      else:
+        callName = first_identifier + "." + sub_identifier
+      self.writer.writeCall(callName, self.numExpressions)
+    # if there is only 1 identifer and it is a method,
+    # push it on to the stack first as first param
+    else:
+      if SYMBOL_TABLE.isDefined(first_identifier):
+        self.writer.writePush(SYMBOL_TABLE.kindOf(first_identifier), SYMBOL_TABLE.indexOf(first_identifier))
+      else:
+        self.writer.writePush('pointer', 0)
+
