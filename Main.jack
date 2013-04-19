@@ -5,13 +5,8 @@
 
 /** Computes the average of a sequence of integers. */
 class Main {
-  static int num, number;
-  field boolean weight;
-
-  function int dispose(int thing, boolean maybe, int face) {
-    var int integer_variable;
-    let integer_variable = 5;
-    do SomeClass.someMethod(x+1, y-2);
-    do someMethod(x);
+  function void main() {
+    do Output.printInt(1 + (2 * 3));
+    return;
   }
 }
