@@ -32,7 +32,7 @@ class VmWriter:
     print >>self.out, "function " + name + " " + str(nLocals)
 
   def writeReturn(self):
-    print >>self.out, "push constant 0"
+    print >>self.out, "push constant 0\nreturn"
 
   def close(self):
     self.out.close()

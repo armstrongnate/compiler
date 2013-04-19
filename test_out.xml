@@ -39,12 +39,6 @@
                 <symbol> ) </symbol>
               </term>
             </expression>
-            <symbol> , </symbol>
-            <expression>
-              <term>
-                <integerConstant> 2 </integerConstant>
-              </term>
-            </expression>
           </expressionList>
           <symbol> ) </symbol>
           <symbol> ; </symbol>

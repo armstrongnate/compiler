@@ -19,8 +19,6 @@
 ('Symbol', '*', 5)
 ('integerConstant', '3', 5)
 ('Symbol', ')', 5)
-('Symbol', ',', 5)
-('integerConstant', '2', 5)
 ('Symbol', ')', 5)
 ('Symbol', ';', 5)
 ('Keyword', 'return', 6)
