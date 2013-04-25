@@ -1,4 +1,4 @@
-This compiler is one of the assignments in the textbook, _Elements of Computing Systems: Building a Modern Computer from First Principles_. It compiles Jack code into VM code.
+This compiler is one of the assignments in the textbook, _Elements of Computing Systems: Building a Modern Computer from First Principles_. It compiles Jack code into VM code using python.
 
 ## How to Use
 Specify the .jack file you wish to parse in compiler_main.py. Eventually, maybe, I'll have it read a directory specified from the terminal but for now it reads one file and in writes one file out. You can specify the name of the .vm file it will write to on the first line of the CompilationEngine.py constructor.
