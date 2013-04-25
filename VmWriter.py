@@ -14,16 +14,16 @@ class VmWriter:
 
   def writeArithmetic(self, command):
     # possible commands: add, sub, neg, eq, gt, lt, and, or, not
-    pass
+    print >>self.out, command
 
   def writeLabel(self, label):
-    pass
+    print >>self.out, "label " + label
 
   def writeGoto(self, label):
-    pass
+    print >>self.out, "goto " + label
 
   def writeIf(self, label):
-    pass
+    print >>self.out, "if-goto " + label
 
   def writeCall(self, name, nArgs):
     print >>self.out, "call " + name + " " + str(nArgs)

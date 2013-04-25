@@ -41,11 +41,21 @@ class SymbolTable:
     if name in self.arg:
       return 'arg'
     elif name in self.var:
-      return 'var'
+      return 'local'
     elif name in self.static:
       return 'static'
     elif name in self.field:
-      return 'field'
+      return 'this'
+
+  def getOffset(self, name):
+    if name in self.arg:
+      return self.arg[name][1]
+    elif name in self.var:
+      return self.var[name][1]
+    elif name in self.static:
+      return self.static[name][1]
+    elif name in self.field:
+      return self.field[name][1]
 
   def indexOf(self, name):
     if name in self.arg:
@@ -56,6 +66,18 @@ class SymbolTable:
       return self.static[name][1]
     elif name in self.field:
       return self.field[name][1]
+    else:
+      raise Exception(name + " not found in symbol table")
+
+  def typeOf(self, name):
+    if name in self.arg:
+      return self.arg[name][0]
+    elif name in self.var:
+      return self.var[name][0]
+    elif name in self.static:
+      return self.static[name][0]
+    elif name in self.field:
+      return self.field[name][0]
     else:
       raise Exception(name + " not found in symbol table")
 
